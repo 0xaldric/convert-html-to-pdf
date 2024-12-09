@@ -1,31 +1,26 @@
 # Build stage
-FROM python:3.11-slim as builder
-
-# Set working directory
-WORKDIR /app
-
-# Install build dependencies
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc python3-dev && \
-    rm -rf /var/lib/apt/lists/*
-
-# Copy only requirements first to leverage Docker cache
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Final stage
 FROM python:3.11-slim
 
+RUN apt-get update
+
+RUN apt-get install -y wkhtmltopdf  
+
+RUN ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+
 WORKDIR /app
 
-# Copy only necessary files from builder
-COPY --from=builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
-COPY input.py .
+COPY requirements.txt .
 
-# Run as non-root user for security
-RUN useradd -m appuser && \
-    chown -R appuser:appuser /app
-USER appuser
+RUN pip install -r requirements.txt
 
-# Command to run the script
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+COPY . .
+
+RUN groupadd -g 1000 app_group
+
+RUN useradd -g app_group --uid 1000 app_user
+
+RUN chown -R app_user:app_group /app
+
+USER app_user
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
