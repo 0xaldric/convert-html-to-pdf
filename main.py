@@ -44,8 +44,7 @@ async def generate_pdf(input: HTMLInput):
         with open(output_path, 'rb') as pdf_file:
             path = s3_handler_instance.upload_file_data_to_s3(
                 file_data=pdf_file,
-                file_name=filename,
-                bucket_name="5pix-dev-search-image"
+                file_name=filename
             )
             if not path:
                 raise HTTPException(status_code=500, detail="Failed to upload PDF to S3")
