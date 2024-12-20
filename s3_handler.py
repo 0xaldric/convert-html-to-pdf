@@ -1,7 +1,7 @@
 import os
 import boto3
 from dotenv import load_dotenv
-from botocore.exceptions import NoCredentialsError
+from botocore.exceptions import NoCredentialsError, ClientError
 
 # Load environment variables from .env file
 load_dotenv()
@@ -41,11 +41,30 @@ class S3Handler():
 
     def upload_file_to_s3(self, local_file_path, s3_file_name=None, bucket_name=AWS_S3_BUCKET_NAME, extra_args=None):
         try:
-            s3_client.upload_file(local_file_path, bucket_name, s3_file_name, ExtraArgs=extra_args)
+            s3_client.upload_file(
+                local_file_path, bucket_name, s3_file_name, ExtraArgs=extra_args)
             return f"https://{AWS_S3_BUCKET_NAME}.s3.{AWS_REGION}.amazonaws.com/{s3_file_name}"
         except NoCredentialsError:
             print("---[x] Credentials not available")
             return False
+
+    def is_file_exist(self, file_name: str, bucket_name=AWS_S3_BUCKET_NAME) -> bool:
+        """
+        Check if a file exists in an S3 bucket
+
+        :param file_name: S3 object name
+        :param bucket_name: Bucket to check in
+        :return: True if file exists, else False
+        """
+        try:
+            s3_client.head_object(Bucket=bucket_name, Key=file_name)
+            return True
+        except ClientError as e:
+            if e.response['Error']['Code'] == '404':
+                return False
+            else:
+                print(f"---[x] Error checking file existence: {e}")
+                return False
 
 
 s3_handler_instance = S3Handler()

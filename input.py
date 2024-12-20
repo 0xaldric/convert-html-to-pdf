@@ -1,6 +1,7 @@
 import requests
 
-url = "http://127.0.0.1:5000/generate-pdf"
+# url = "http://52.220.178.236:6000/generate-pdf"
+url = "http://localhost:5001/generate-pdf"
 html_string = """
 <!DOCTYPE html>
 <html lang="en">
@@ -19,4 +20,4 @@ html_string = """
 data = {"html": html_string}
 
 response = requests.post(url, json=data)
-print(response.json())
+print(response.content)
