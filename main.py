@@ -84,8 +84,8 @@ async def generate_pdf(input: HTMLInput):
                 raise HTTPException(
                     status_code=500, detail="Failed to upload HTML to S3")
 
-        os.remove(output_path)
-        os.remove(html_output_path)
+        # os.remove(output_path)
+        # os.remove(html_output_path)
 
         # Return the filename
         response = {"filename": filename_to_upload, "path": path, "html_path": html_path}
