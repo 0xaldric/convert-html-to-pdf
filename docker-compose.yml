@@ -10,6 +10,8 @@ services:
     volumes:
       - .:/app
       - ./app.log:/app/app.log
+      - ./generated_htmls:/app/generated_htmls
+      - ./generated_pdfs:/app/generated_pdfs
     env_file:
       - .env
     restart: unless-stopped 
