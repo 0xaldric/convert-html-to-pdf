@@ -84,5 +84,5 @@ docker/
 
 # Folder upload file
 import_ftp/*
-generated_htmls/*
-generated_pdfs/*
+# generated_htmls/*
+# generated_pdfs/*
