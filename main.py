@@ -47,18 +47,27 @@ async def generate_pdf(input: HTMLInput):
     """
     try:
         # Generate a unique filename
-        name = str(uuid.uuid4())
+        timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+        name = f"{timestamp}_{uuid.uuid4()}"
         filename = f"{name}.pdf"
         html_filename = f"{name}.html"
+        text_filename = f"{name}.txt"
         output_path = os.path.join(PDF_OUTPUT_DIR, filename)
         html_output_path = os.path.join(HTML_OUTPUT_DIR, html_filename)
-
-        # Convert HTML to PDF
-        pdfkit.from_string(
-            input.html, output_path, configuration=PDFKIT_CONFIG)
+        text_output_path = os.path.join(HTML_OUTPUT_DIR, text_filename)
 
         with open(html_output_path, 'w') as html_file:
             html_file.write(input.html)
+
+        with open(text_output_path, 'w') as text_file:
+            text_file.write(input.html)
+
+        with open(html_output_path, 'r') as html_file:
+            content = html_file.read()
+
+        # Convert HTML to PDF
+        pdfkit.from_string(
+            content, output_path, configuration=PDFKIT_CONFIG)
 
         # Upload PDF to S3
         path = ''
@@ -88,7 +97,8 @@ async def generate_pdf(input: HTMLInput):
         # os.remove(html_output_path)
 
         # Return the filename
-        response = {"filename": filename_to_upload, "path": path, "html_path": html_path}
+        response = {"filename": filename_to_upload,
+                    "path": path, "html_path": html_path}
         logging.info(f"Response: {response}")
         print(f"Response: {response}")
         return response
