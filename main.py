@@ -6,6 +6,10 @@ import pdfkit
 import uuid
 import os
 from s3_handler import s3_handler_instance
+import logging
+
+logging.basicConfig(filename='app.log', level=logging.INFO,
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Create FastAPI app
 app = FastAPI()
@@ -84,7 +88,10 @@ async def generate_pdf(input: HTMLInput):
         os.remove(html_output_path)
 
         # Return the filename
-        return {"filename": filename_to_upload, "path": path, "html_path": html_path}
+        response = {"filename": filename_to_upload, "path": path, "html_path": html_path}
+        logging.info(f"Response: {response}")
+        print(f"Response: {response}")
+        return response
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error generating PDF: {str(e)}")
