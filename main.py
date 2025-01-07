@@ -1,6 +1,6 @@
 import datetime
 import io
-from fastapi import FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException
 from pydantic import BaseModel
 import pdfkit
 import uuid
@@ -45,6 +45,11 @@ async def generate_pdf(input: HTMLInput):
     Returns:
         dict: Dictionary with the generated filename.
     """
+    html = input.html
+    return generate_pdf_and_upload(html)
+
+
+def generate_pdf_and_upload(html):
     try:
         # Generate a unique filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -57,10 +62,10 @@ async def generate_pdf(input: HTMLInput):
         text_output_path = os.path.join(HTML_OUTPUT_DIR, text_filename)
 
         with open(html_output_path, 'w') as html_file:
-            html_file.write(input.html)
+            html_file.write(html)
 
         with open(text_output_path, 'w') as text_file:
-            text_file.write(input.html)
+            text_file.write(html)
 
         with open(html_output_path, 'r') as html_file:
             content = html_file.read()
@@ -105,3 +110,16 @@ async def generate_pdf(input: HTMLInput):
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error generating PDF: {str(e)}")
+
+
+@app.post("/generate-pdf-submit-text")
+async def receive_plain_text(content: str = Body(..., media_type="text/plain")):
+    """_summary_
+
+    Args:
+        content (str, optional): _description_. Defaults to Body(..., media_type="text/plain").
+
+    Returns:
+        _type_: _description_
+    """
+    return generate_pdf_and_upload(content)
