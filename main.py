@@ -56,16 +56,11 @@ def generate_pdf_and_upload(html):
         name = f"{timestamp}_{uuid.uuid4()}"
         filename = f"{name}.pdf"
         html_filename = f"{name}.html"
-        text_filename = f"{name}.txt"
         output_path = os.path.join(PDF_OUTPUT_DIR, filename)
         html_output_path = os.path.join(HTML_OUTPUT_DIR, html_filename)
-        text_output_path = os.path.join(HTML_OUTPUT_DIR, text_filename)
 
         with open(html_output_path, 'w') as html_file:
             html_file.write(html)
-
-        with open(text_output_path, 'w') as text_file:
-            text_file.write(html)
 
         with open(html_output_path, 'r') as html_file:
             content = html_file.read()
