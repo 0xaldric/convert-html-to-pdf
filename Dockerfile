@@ -1,12 +1,14 @@
-# Stage 1: get wkhtmltopdf
-FROM surnet/alpine-wkhtmltopdf:3.12-0.12.6-full as wkhtml
-
-# Stage 2: Python 3.11 app
 FROM python:3.11-slim
 
-# Copy wkhtmltopdf binary from Alpine stage
-COPY --from=wkhtml /bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
-COPY --from=wkhtml /bin/wkhtmltoimage /usr/local/bin/wkhtmltoimage
+# Install WeasyPrint dependencies
+RUN apt-get update && apt-get install -y \
+    libpango-1.0-0 \
+    libpangoft2-1.0-0 \
+    libpangocairo-1.0-0 \
+    libcairo2 \
+    libffi-dev \
+    shared-mime-info \
+ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

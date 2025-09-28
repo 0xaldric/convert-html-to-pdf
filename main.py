@@ -1,15 +1,14 @@
 import datetime
-import io
-from fastapi import Body, FastAPI, HTTPException
-from pydantic import BaseModel
-import pdfkit
 import uuid
 import os
+from fastapi import Body, FastAPI, HTTPException
+from pydantic import BaseModel
+from weasyprint import HTML
 from s3_handler import s3_handler_instance
 import logging
 
-logging.basicConfig(filename='app.log', level=logging.INFO,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.basicConfig(filename='app.log', level=logging.INFO,
+#                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Create FastAPI app
 app = FastAPI()
@@ -17,6 +16,11 @@ app = FastAPI()
 # Define input schema
 
 PREFIX = 'html-to-pdf-'
+PDF_OUTPUT_DIR = "generated_pdfs"
+HTML_OUTPUT_DIR = "generated_htmls"
+
+os.makedirs(PDF_OUTPUT_DIR, exist_ok=True)
+os.makedirs(HTML_OUTPUT_DIR, exist_ok=True)
 
 
 class HTMLInput(BaseModel):
@@ -30,8 +34,8 @@ HTML_OUTPUT_DIR = "generated_htmls"
 os.makedirs(PDF_OUTPUT_DIR, exist_ok=True)
 
 # PDFKit configuration (Path to wkhtmltopdf binary if needed)
-PDFKIT_CONFIG = pdfkit.configuration(
-    wkhtmltopdf='/usr/local/bin/wkhtmltopdf')  # Update path as necessary
+# PDFKIT_CONFIG = pdfkit.configuration(
+#    wkhtmltopdf='/usr/local/bin/wkhtmltopdf')  # Update path as necessary
 
 
 @app.post("/generate-pdf")
@@ -51,7 +55,7 @@ async def generate_pdf(input: HTMLInput):
 
 def generate_pdf_and_upload(html):
     try:
-        # Generate a unique filename
+        # Unique filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
         name = f"{timestamp}_{uuid.uuid4()}"
         filename = f"{name}.pdf"
@@ -59,22 +63,21 @@ def generate_pdf_and_upload(html):
         output_path = os.path.join(PDF_OUTPUT_DIR, filename)
         html_output_path = os.path.join(HTML_OUTPUT_DIR, html_filename)
 
+        # Save HTML
         with open(html_output_path, 'w') as html_file:
             html_file.write(html)
 
-        with open(html_output_path, 'r') as html_file:
-            content = html_file.read()
+        # Convert HTML -> PDF with WeasyPrint
+        HTML(string=html).write_pdf(output_path)
 
-        # Convert HTML to PDF
-        pdfkit.from_string(
-            content, output_path, configuration=PDFKIT_CONFIG)
-
-        # Upload PDF to S3
-        path = ''
-        html_path = ''
+        # Upload to S3
         today = datetime.datetime.now().strftime("%Y-%m-%d")
         prefix = f"{PREFIX}{today}/"
-        filename_to_upload = prefix+filename
+
+        path = ''
+        html_path = ''
+
+        filename_to_upload = prefix + filename
         with open(output_path, 'rb') as pdf_file:
             path = s3_handler_instance.upload_file_data_to_s3(
                 file_data=pdf_file,
@@ -83,7 +86,8 @@ def generate_pdf_and_upload(html):
             if not path:
                 raise HTTPException(
                     status_code=500, detail="Failed to upload PDF to S3")
-        html_filename_to_upload = prefix+html_filename
+
+        html_filename_to_upload = prefix + html_filename
         with open(html_output_path, 'rb') as html_file:
             html_path = s3_handler_instance.upload_file_data_to_s3(
                 file_data=html_file,
@@ -102,6 +106,7 @@ def generate_pdf_and_upload(html):
         logging.info(f"Response: {response}")
         print(f"Response: {response}")
         return response
+
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error generating PDF: {str(e)}")
