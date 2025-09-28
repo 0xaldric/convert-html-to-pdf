@@ -1,11 +1,12 @@
-# Build stage
+# Stage 1: get wkhtmltopdf
+FROM surnet/alpine-wkhtmltopdf:3.12-0.12.6-full as wkhtml
+
+# Stage 2: Python 3.11 app
 FROM python:3.11-slim
 
-RUN apt-get update
-
-RUN apt-get install -y wkhtmltopdf  
-
-RUN ln -s /usr/bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+# Copy wkhtmltopdf binary from Alpine stage
+COPY --from=wkhtml /bin/wkhtmltopdf /usr/local/bin/wkhtmltopdf
+COPY --from=wkhtml /bin/wkhtmltoimage /usr/local/bin/wkhtmltoimage
 
 WORKDIR /app
 
@@ -23,4 +24,4 @@ RUN chown -R app_user:app_group /app
 
 USER app_user
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "6000"]

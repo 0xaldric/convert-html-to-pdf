@@ -1,12 +1,12 @@
-version: '3.8'
+version: "3.3"
 
 services:
   api:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "6000:8000"
+      - "6000:6000"
     volumes:
       - .:/app
       - ./app.log:/app/app.log
@@ -14,4 +14,4 @@ services:
       - ./generated_pdfs:/app/generated_pdfs
     env_file:
       - .env
-    restart: unless-stopped 
+    restart: unless-stopped
