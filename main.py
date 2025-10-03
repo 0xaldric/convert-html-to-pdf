@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from weasyprint import HTML
 from s3_handler import s3_handler_instance
 import logging
+import uvicorn
 
 # logging.basicConfig(filename='app.log', level=logging.INFO,
 #                    format='%(asctime)s - %(levelname)s - %(message)s')
@@ -123,3 +124,13 @@ async def receive_plain_text(content: str = Body(..., media_type="text/plain")):
         _type_: _description_
     """
     return generate_pdf_and_upload(content)
+
+if __name__ == "__main__":
+    print("Starting webserver...")
+    uvicorn.run(
+        app=app,
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 6000)),
+        log_level=os.getenv('LOG_LEVEL', "info"),
+        proxy_headers=True
+    )
