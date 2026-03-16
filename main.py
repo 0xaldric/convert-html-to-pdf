@@ -3,7 +3,7 @@ import uuid
 import os
 from fastapi import Body, FastAPI, HTTPException
 from pydantic import BaseModel
-from weasyprint import HTML
+from playwright.async_api import async_playwright
 from s3_handler import s3_handler_instance
 import logging
 import uvicorn
@@ -51,10 +51,10 @@ async def generate_pdf(input: HTMLInput):
         dict: Dictionary with the generated filename.
     """
     html = input.html
-    return generate_pdf_and_upload(html)
+    return await generate_pdf_and_upload(html)
 
 
-def generate_pdf_and_upload(html):
+async def generate_pdf_and_upload(html):
     try:
         # Unique filename
         timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
@@ -68,8 +68,13 @@ def generate_pdf_and_upload(html):
         with open(html_output_path, 'w') as html_file:
             html_file.write(html)
 
-        # Convert HTML -> PDF with WeasyPrint
-        HTML(string=html).write_pdf(output_path)
+        # Convert HTML -> PDF with Playwright (Chromium)
+        async with async_playwright() as p:
+            browser = await p.chromium.launch()
+            page = await browser.new_page()
+            await page.set_content(html, wait_until="networkidle")
+            await page.pdf(path=output_path, format="A4", print_background=True)
+            await browser.close()
 
         # Upload to S3
         today = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -123,7 +128,7 @@ async def receive_plain_text(content: str = Body(..., media_type="text/plain")):
     Returns:
         _type_: _description_
     """
-    return generate_pdf_and_upload(content)
+    return await generate_pdf_and_upload(content)
 
 if __name__ == "__main__":
     print("Starting webserver...")
