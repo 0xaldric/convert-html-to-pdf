@@ -25,7 +25,8 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-# Install Chromium headless shell for Playwright
+# Install Chromium to a shared path accessible by all users
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/pw-browsers
 RUN playwright install chromium
 
 COPY . .
