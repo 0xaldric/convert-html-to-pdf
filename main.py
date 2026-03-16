@@ -1,4 +1,5 @@
 import datetime
+import time
 import uuid
 import os
 from fastapi import Body, FastAPI, HTTPException, Request
@@ -15,6 +16,21 @@ import uvicorn
 
 # Create FastAPI app
 app = FastAPI()
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    request_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    body = await request.body()
+    body_preview = body.decode('utf-8', errors='replace')[:100]
+    logging.info(f"[{request_time}] Request: {request.method} {request.url.path} - body: {body_preview}...")
+    print(f"[{request_time}] Request: {request.method} {request.url.path} - body: {body_preview}...")
+    start = time.time()
+    response = await call_next(request)
+    elapsed = time.time() - start
+    logging.info(f"Response: {request.method} {request.url.path} - status: {response.status_code} - took {elapsed:.2f}s")
+    print(f"Response: {request.method} {request.url.path} - status: {response.status_code} - took {elapsed:.2f}s")
+    return response
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -61,8 +77,6 @@ async def generate_pdf(input: HTMLInput):
         dict: Dictionary with the generated filename.
     """
     html = input.html
-    logging.info(f"generate-pdf - content: {html[:10]}...")
-    print(f"generate-pdf - content: {html[:10]}...")
     return await generate_pdf_and_upload(html)
 
 
@@ -140,8 +154,6 @@ async def receive_plain_text(content: str = Body(..., media_type="text/plain")):
     Returns:
         _type_: _description_
     """
-    logging.info(f"generate-pdf-submit-text - content: {content[:10]}...")
-    print(f"generate-pdf-submit-text - content: {content[:10]}...")
     return await generate_pdf_and_upload(content)
 
 if __name__ == "__main__":
