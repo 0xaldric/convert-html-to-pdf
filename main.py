@@ -1,7 +1,9 @@
 import datetime
 import uuid
 import os
-from fastapi import Body, FastAPI, HTTPException
+from fastapi import Body, FastAPI, HTTPException, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from playwright.async_api import async_playwright
 from s3_handler import s3_handler_instance
@@ -13,6 +15,14 @@ import uvicorn
 
 # Create FastAPI app
 app = FastAPI()
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    body = await request.body()
+    logging.error(f"422 Unprocessable Entity - Body: {body.decode('utf-8', errors='replace')} - Errors: {exc.errors()}")
+    print(f"---[x] 422 Unprocessable Entity - Body: {body.decode('utf-8', errors='replace')} - Errors: {exc.errors()}")
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
 
 # Define input schema
 
@@ -51,6 +61,8 @@ async def generate_pdf(input: HTMLInput):
         dict: Dictionary with the generated filename.
     """
     html = input.html
+    logging.info(f"generate-pdf - content: {html[:10]}...")
+    print(f"generate-pdf - content: {html[:10]}...")
     return await generate_pdf_and_upload(html)
 
 
@@ -128,6 +140,8 @@ async def receive_plain_text(content: str = Body(..., media_type="text/plain")):
     Returns:
         _type_: _description_
     """
+    logging.info(f"generate-pdf-submit-text - content: {content[:10]}...")
+    print(f"generate-pdf-submit-text - content: {content[:10]}...")
     return await generate_pdf_and_upload(content)
 
 if __name__ == "__main__":
